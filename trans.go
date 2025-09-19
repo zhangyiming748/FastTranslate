@@ -1,4 +1,4 @@
-package FastTranslateSRT
+package FastTranslate
 
 import (
 	"fmt"

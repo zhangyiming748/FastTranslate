@@ -1,4 +1,4 @@
-package FastTranslateSRT
+package FastTranslate
 
 type TranslateConfig struct {
 	SrtRoot       string // 字幕文件路径
