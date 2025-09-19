@@ -1,16 +1,19 @@
-package fastTranslateSRT
+package FastTranslateSRT
+
 import (
 	"fmt"
 	"log"
-	"os/exec"
-	"strings"
-	"github.com/zhangyiming748/fastTranslateSRT/storage"
-	"github.com/zhangyiming748/fastTranslateSRT/util"
 	"math/rand"
-	"time"
 	"os"
+	"os/exec"
 	"strconv"
+	"strings"
+	"time"
+
+	"github.com/zhangyiming748/FastTranslate/storage"
+	"github.com/zhangyiming748/FastTranslate/util"
 )
+
 var (
 	seed = rand.New(rand.NewSource(time.Now().Unix()))
 )
@@ -31,7 +34,7 @@ func TransVideo(tc *TranslateConfig) {
 					err1 := os.Rename(tc.SrtRoot, origin)
 					err2 := os.Rename(tmpname, tc.SrtRoot)
 					if err1 != nil || err2 != nil {
-						log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1,err2)
+						log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
 					}
 				}
 				return
@@ -51,7 +54,7 @@ func TransVideo(tc *TranslateConfig) {
 		src := before[i+2]
 		src = strings.Replace(src, "\n", "", 1)
 		src = strings.Replace(src, "\r\n", "", 1)
-		
+
 		var dst string
 		behind := new(storage.TranslateHistory)
 		behind.Src = src
@@ -83,7 +86,7 @@ func TransVideo(tc *TranslateConfig) {
 	err1 := os.Rename(tc.SrtRoot, origin)
 	err2 := os.Rename(tmpname, tc.SrtRoot)
 	if err1 != nil || err2 != nil {
-		log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1,err2)
+		log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
 	}
 }
 func Trans(src, proxy string) string {
