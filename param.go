@@ -2,18 +2,18 @@ package FastTranslate
 
 type TranslateConfig struct {
 	SrtRoot       string // 字幕文件路径
-	Proxy         string // 查询时使用的代理
+	Key           string // 查询时使用的linux.do key
 	MysqlHost     string // mysql host
 	MysqlPort     string // mysql port
 	MysqlUser     string // mysql user
 	MysqlPassword string // mysql password
 }
 
-func (tc *TranslateConfig) SetProxy(s string) {
-	tc.Proxy = s
+func (tc *TranslateConfig) SetKey(s string) {
+	tc.Key = s
 }
 
-func (tc *TranslateConfig) SetMysqHost(s string) {
+func (tc *TranslateConfig) SetMysqlHost(s string) {
 	tc.MysqlHost = s
 }
 

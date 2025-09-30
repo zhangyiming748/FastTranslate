@@ -1,11 +1,12 @@
 package FastTranslate
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
+	"net/url"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,9 @@ var (
 )
 
 func TransVideo(tc TranslateConfig) {
+
+	storage.SetMysql(tc.MysqlUser, tc.MysqlPassword, tc.MysqlHost, tc.MysqlPort)
+
 	r := seed.Intn(2000)
 	tmpname := strings.Join([]string{strings.Replace(tc.SrtRoot, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
 	before := util.ReadInSlice(tc.SrtRoot)
@@ -63,7 +67,7 @@ func TransVideo(tc TranslateConfig) {
 			fmt.Printf("在缓存中找到dst = %s\n", dst)
 		} else {
 			fmt.Println("未在缓存中找到")
-			dst = Trans(src, tc.Proxy)
+			dst = Trans(src, tc.Key)
 			dst = strings.Replace(dst, "\n", "", -1)
 			randomNumber := util.GetSeed().Intn(401) + 100
 			time.Sleep(time.Duration(randomNumber) * time.Millisecond) // 暂停 100 毫秒
@@ -89,25 +93,19 @@ func TransVideo(tc TranslateConfig) {
 		log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
 	}
 }
-func Trans(src, proxy string) string {
+func Trans(src, key string) string {
 	h := new(storage.TranslateHistory)
 	h.Src = src
 	if found, _ := h.FindBySrc(); found {
 		return h.Dst
 	}
-	var cmd *exec.Cmd
-	if proxy == "" {
-		cmd = exec.Command("trans", "-brief", "-engine", "bing", ":zh-CN", src)
-	} else {
-		cmd = exec.Command("trans", "-brief", "-engine", "google", "-proxy", proxy, ":zh-CN", src)
-	}
-	log.Printf("命令 : %s\n", cmd.String())
-	output, err := cmd.CombinedOutput()
+RETRY:
+	dst, err := TransByServer(src, key)
 	if err != nil {
-		return src
+		time.Sleep(3 * time.Second)
+		goto RETRY
 	}
 
-	dst := string(output)
 	dst = strings.ReplaceAll(dst, "\n", "") // 删除所有换行符
 	dst = strings.ReplaceAll(dst, "\r", "") // 删除所有回车符
 	if strings.Contains(dst, "error") {
@@ -116,4 +114,40 @@ func Trans(src, proxy string) string {
 	h.Dst = dst
 	h.InsertOne()
 	return dst
+}
+func TransByServer(src, key string) (string, error) {
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+	params := map[string]string{
+		"text":        src,
+		"source_lang": "auto",
+		"target_lang": "zh",
+	}
+	host, _ := url.JoinPath(PREFIX, key, SUFFIX)
+	b, err := util.HttpPostJson(headers, params, host)
+	if err != nil {
+		return "", err
+	}
+	//log.Println(b)
+	var d DeepLXTranslationResult
+	if e := json.Unmarshal(b, &d); e != nil {
+		return "", e
+	}
+	//log.Printf("%+v\n", d)
+	return d.Data, nil
+}
+
+const PREFIX = "https://api.deeplx.org"
+const SUFFIX = "translate"
+
+type DeepLXTranslationResult struct {
+	Code         int      `json:"code"`
+	ID           int64    `json:"id"`
+	Message      string   `json:"message,omitempty"`
+	Data         string   `json:"data"`         // The primary translated text
+	Alternatives []string `json:"alternatives"` // Other possible translations
+	SourceLang   string   `json:"source_lang"`
+	TargetLang   string   `json:"target_lang"`
+	Method       string   `json:"method"`
 }
