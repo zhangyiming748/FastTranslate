@@ -99,7 +99,8 @@ func Trans(src, key string) string {
 	}
 RETRY:
 	dst, err := TransByServer(src, key)
-	if err != nil {
+	if err != nil && dst == "" {
+		log.Printf("此次查询失败:%v\n", err)
 		time.Sleep(3 * time.Second)
 		goto RETRY
 	}
