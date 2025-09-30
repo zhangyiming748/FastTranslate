@@ -1,0 +1,10 @@
+services:
+  fastTranslate:
+    image: zhangyiming748/all_in_one:latest
+    container_name: fastTranslate
+    volumes:
+      - ./:/data
+    restart: unless-stopped
+    command: ["bash"]
+    stdin_open: true
+    tty: true
