@@ -18,7 +18,7 @@ var (
 	seed = rand.New(rand.NewSource(time.Now().Unix()))
 )
 
-func TransVideo(tc *TranslateConfig) {
+func TransVideo(tc TranslateConfig) {
 	r := seed.Intn(2000)
 	tmpname := strings.Join([]string{strings.Replace(tc.SrtRoot, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
 	before := util.ReadInSlice(tc.SrtRoot)

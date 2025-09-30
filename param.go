@@ -3,7 +3,7 @@ package FastTranslate
 type TranslateConfig struct {
 	SrtRoot       string // 字幕文件路径
 	Proxy         string // 查询时使用的代理
-	MysqHost      string // mysql host
+	MysqlHost     string // mysql host
 	MysqlPort     string // mysql port
 	MysqlUser     string // mysql user
 	MysqlPassword string // mysql password
@@ -14,7 +14,7 @@ func (tc *TranslateConfig) SetProxy(s string) {
 }
 
 func (tc *TranslateConfig) SetMysqHost(s string) {
-	tc.MysqHost = s
+	tc.MysqlHost = s
 }
 
 func (tc *TranslateConfig) SetMysqlPort(s string) {
