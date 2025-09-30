@@ -129,12 +129,12 @@ func TransByServer(src, key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	//log.Println(b)
+	fmt.Println(b)
 	var d DeepLXTranslationResult
 	if e := json.Unmarshal(b, &d); e != nil {
 		return "", e
 	}
-	//log.Printf("%+v\n", d)
+	fmt.Printf("%+v\n", d)
 	return d.Data, nil
 }
 
