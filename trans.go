@@ -51,8 +51,6 @@ func TransVideo(tc TranslateConfig) {
 		if i+3 > len(before) {
 			continue
 		}
-		log.Printf("翻译之前序号\"%s\"时间\"%s\"正文\"%s\"空行\"%s\"\n", before[i], before[i+1], before[i+2], before[i+3])
-		log.SetPrefix(before[i])
 		after.WriteString(before[i])
 		after.WriteString(before[i+1])
 		src := before[i+2]
@@ -76,8 +74,8 @@ func TransVideo(tc TranslateConfig) {
 				log.Fatalf("字幕文件写入缓存出现错误:%v\n", err)
 			}
 		}
-
-		fmt.Printf("翻译之后序号:\"%s\"时间:\"%s\"正文:\"%s\"空行:\"%s\"原文:\"%s\"\t译文\"%s\"\n", before[i], before[i+1], before[i+2], before[i+3], src, dst)
+		fmt.Printf("src = %s\n", src)
+		fmt.Printf("dst = %s\n", dst)
 		after.WriteString(src)
 		after.WriteString("\n")
 		after.WriteString(dst)
@@ -129,7 +127,7 @@ func TransByServer(src, key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println(b)
+	fmt.Println(string(b))
 	var d DeepLXTranslationResult
 	if e := json.Unmarshal(b, &d); e != nil {
 		return "", e
