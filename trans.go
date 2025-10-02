@@ -22,7 +22,7 @@ var (
 func TransVideo(tc TranslateConfig) {
 
 	storage.SetMysql(tc.MysqlUser, tc.MysqlPassword, tc.MysqlHost, tc.MysqlPort)
-
+	storage.GetMysql().Sync2(storage.TranslateHistory{})
 	r := seed.Intn(2000)
 	tmpname := strings.Join([]string{strings.Replace(tc.SrtRoot, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
 	before := util.ReadInSlice(tc.SrtRoot)
