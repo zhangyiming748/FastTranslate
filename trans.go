@@ -110,8 +110,6 @@ RETRY:
 	if strings.Contains(dst, "error") {
 		return src
 	}
-	h.Dst = dst
-	h.InsertOne()
 	return dst
 }
 func TransByServer(src, key string) (string, error) {
