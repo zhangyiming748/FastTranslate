@@ -2,9 +2,10 @@ package storage
 
 import (
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 	"xorm.io/xorm"
 )
 

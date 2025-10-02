@@ -5,11 +5,9 @@ import (
 )
 
 type TranslateHistory struct {
-	Id  int64  `xorm:"pk autoincr notnull comment('主键id') INT(11)"`
-	Src string `xorm:"varchar(255) comment(原文)"`
-	Dst string `xorm:"varchar(255) comment(译文)"`
-	//Source_lang string    `xorm:"varchar(255) comment(源语言)"`
-	//Target_lang string    `xorm:"varchar(255) comment(目标语言)"`
+	Id        int64     `xorm:"pk autoincr notnull comment('主键id') INT(11)"`
+	Src       string    `xorm:"Text comment(原文)"`
+	Dst       string    `xorm:"Text comment(译文)"`
 	CreatedAt time.Time `xorm:"created"`
 	UpdatedAt time.Time `xorm:"updated"`
 	DeletedAt time.Time `xorm:"deleted"`
