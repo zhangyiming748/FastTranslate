@@ -22,11 +22,13 @@ var (
 func TransVideo(tc TranslateConfig) {
 
 	storage.SetSqlite()
-	storage.GetSqlite().AutoMigrate(storage.TranslateHistory{})
-	storage.GetMysql().Sync2(storage.TranslateHistory{})
+	if err := storage.GetSqlite().AutoMigrate(storage.TranslateHistory{}); err != nil {
+		log.Fatalf("同步数据库表结构失败:%v\n", err)
+	}
+
 	r := seed.Intn(2000)
-	tmpname := strings.Join([]string{strings.Replace(tc.SrtRoot, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
-	before := util.ReadInSlice(tc.SrtRoot)
+	tmpname := strings.Join([]string{strings.Replace(tc.SourceSrtFile, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
+	before := util.ReadInSlice(tc.SourceSrtFile)
 	fmt.Println(before)
 	after, _ := os.OpenFile(tmpname, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0777)
 	defer func() {
@@ -35,9 +37,9 @@ func TransVideo(tc TranslateConfig) {
 			if strings.Contains(v, "index out of range") {
 				fmt.Println("捕获到 index out of range 类型错误,忽略并继续执行重命名操作")
 				{
-					origin := strings.Join([]string{strings.Replace(tc.SrtRoot, ".srt", "", 1), "_origin", ".srt"}, "")
-					err1 := os.Rename(tc.SrtRoot, origin)
-					err2 := os.Rename(tmpname, tc.SrtRoot)
+					origin := strings.Join([]string{strings.Replace(tc.SourceSrtFile, ".srt", "", 1), "_origin", ".srt"}, "")
+					err1 := os.Rename(tc.SourceSrtFile, origin)
+					err2 := os.Rename(tmpname, tc.SourceSrtFile)
 					if err1 != nil || err2 != nil {
 						log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
 					}
@@ -85,9 +87,9 @@ func TransVideo(tc TranslateConfig) {
 		after.Sync()
 	}
 	after.Close()
-	origin := strings.Join([]string{strings.Replace(tc.SrtRoot, ".srt", "", 1), "_origin", ".srt"}, "")
-	err1 := os.Rename(tc.SrtRoot, origin)
-	err2 := os.Rename(tmpname, tc.SrtRoot)
+	origin := strings.Join([]string{strings.Replace(tc.SourceSrtFile, ".srt", "", 1), "_origin", ".srt"}, "")
+	err1 := os.Rename(tc.SourceSrtFile, origin)
+	err2 := os.Rename(tmpname, tc.SourceSrtFile)
 	if err1 != nil || err2 != nil {
 		log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
 	}
