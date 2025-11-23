@@ -27,7 +27,7 @@ func main() {
     tc.Key = "your-deeplx-api-key"           // 设置你的 DeepLX API 密钥 
     tc.SourceSrtFile = "path/to/subtitle.srt" // 设置源字幕文件路径
     
-    FastTranslate.TransVideo(tc)
+    FastTranslate.TranslateSrt(tc)
 }
 ```
 
