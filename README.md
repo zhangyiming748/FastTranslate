@@ -24,7 +24,7 @@ import (
 
 func main() {
     tc := FastTranslate.TranslateConfig{}
-    tc.Key = "your-deeplx-api-key"           // 设置你的 DeepLX API 密钥
+    tc.Key = "your-deeplx-api-key"           // 设置你的 DeepLX API 密钥 
     tc.SourceSrtFile = "path/to/subtitle.srt" // 设置源字幕文件路径
     
     FastTranslate.TransVideo(tc)
@@ -33,7 +33,7 @@ func main() {
 
 ## 配置说明
 
-- `Key`: DeepLX API 密钥
+- `Key`: DeepLX API 密钥 在[这里](https://connect.linux.do/)获取
 - `SourceSrtFile`: 需要翻译的 `.srt` 字幕文件路径
 
 ## 工作原理
