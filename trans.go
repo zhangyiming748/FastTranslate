@@ -19,8 +19,7 @@ var (
 	seed = rand.New(rand.NewSource(time.Now().Unix()))
 )
 
-func TransVideo(tc TranslateConfig) {
-
+func TranslateSrt(tc TranslateConfig) {
 	storage.SetSqlite()
 	if err := storage.GetSqlite().AutoMigrate(storage.TranslateHistory{}); err != nil {
 		log.Fatalf("同步数据库表结构失败:%v\n", err)

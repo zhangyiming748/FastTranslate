@@ -12,5 +12,5 @@ func TestTransOne(t *testing.T) {
 	tc := TranslateConfig{}
 	tc.SetKey("")
 	tc.SourceSrtFile = "en_processed.srt"
-	TransVideo(tc)
+	TranslateSrt(tc)
 }
