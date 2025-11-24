@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/zhangyiming748/FastTranslate/storage"
 	"github.com/zhangyiming748/FastTranslate/util"
 )
 
@@ -20,11 +18,6 @@ var (
 )
 
 func TranslateSrt(tc TranslateConfig) {
-	storage.SetSqlite()
-	if err := storage.GetSqlite().AutoMigrate(storage.TranslateHistory{}); err != nil {
-		log.Fatalf("同步数据库表结构失败:%v\n", err)
-	}
-
 	r := seed.Intn(2000)
 	tmpname := strings.Join([]string{strings.Replace(tc.SourceSrtFile, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
 	before := util.ReadInSlice(tc.SourceSrtFile)
@@ -58,24 +51,11 @@ func TranslateSrt(tc TranslateConfig) {
 		src := before[i+2]
 		src = strings.Replace(src, "\n", "", 1)
 		src = strings.Replace(src, "\r\n", "", 1)
-
 		var dst string
-		behind := new(storage.TranslateHistory)
-		behind.Src = src
-		if has, _ := behind.FindBySrc(); has {
-			dst = behind.Dst
-			fmt.Printf("在缓存中找到dst = %s\n", dst)
-		} else {
-			fmt.Println("未在缓存中找到")
-			dst = Trans(src, tc.Key)
-			dst = strings.Replace(dst, "\n", "", -1)
-			randomNumber := util.GetSeed().Intn(401) + 100
-			time.Sleep(time.Duration(randomNumber) * time.Millisecond) // 暂停 100 毫秒
-			behind.Dst = dst
-			if _, err := behind.InsertOne(); err != nil {
-				log.Fatalf("字幕文件写入缓存出现错误:%v\n", err)
-			}
-		}
+		dst = Trans(src, tc)
+		dst = strings.Replace(dst, "\n", "", -1)
+		randomNumber := util.GetSeed().Intn(401) + 100
+		time.Sleep(time.Duration(randomNumber) * time.Millisecond) // 暂停 100 毫秒
 		fmt.Printf("src = %s\n", src)
 		fmt.Printf("dst = %s\n", dst)
 		after.WriteString(src)
@@ -93,20 +73,8 @@ func TranslateSrt(tc TranslateConfig) {
 		log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
 	}
 }
-func Trans(src, key string) string {
-	h := new(storage.TranslateHistory)
-	h.Src = src
-	if found, _ := h.FindBySrc(); found {
-		return h.Dst
-	}
-RETRY:
-	dst, err := TransByServer(src, key)
-	if err != nil && dst == "" {
-		log.Printf("此次查询失败:%v\n", err)
-		time.Sleep(3 * time.Second)
-		goto RETRY
-	}
-
+func Trans(src string, tc TranslateConfig) (dst string) {
+	dst = TransByServer(src, tc)
 	dst = strings.ReplaceAll(dst, "\n", "") // 删除所有换行符
 	dst = strings.ReplaceAll(dst, "\r", "") // 删除所有回车符
 	if strings.Contains(dst, "error") {
@@ -114,39 +82,44 @@ RETRY:
 	}
 	return dst
 }
-func TransByServer(src, key string) (string, error) {
+
+/*
+curl --location --request POST 'http://trans.zhangyiming748.eu.org/api/v1/translate' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+"src":"hello",
+"proxy":"http://127.0.0.1:8889"
+}'
+*/
+func TransByServer(src string, tc TranslateConfig) (dst string) {
 	headers := map[string]string{
 		"Content-Type": "application/json",
 	}
 	params := map[string]string{
-		"text":        src,
-		"source_lang": "auto",
-		"target_lang": "zh",
+		"src": src,
 	}
-	host, _ := url.JoinPath(PREFIX, key, SUFFIX)
-	b, err := util.HttpPostJson(headers, params, host)
+	if tc.Proxy != "" {
+		params["proxy"] = tc.Proxy
+	}
+	b, err := util.HttpPostJson(headers, params, HOST)
 	if err != nil {
-		return "", err
+		log.Printf("获取翻译服务响应失败,等待3秒后重试:%v\n", err)
+		time.Sleep(3 * time.Second)
+		TransByServer(src, tc)
 	}
 	fmt.Println(string(b))
-	var d DeepLXTranslationResult
-	if e := json.Unmarshal(b, &d); e != nil {
-		return "", e
+	var r Req
+	if e := json.Unmarshal(b, &r); e != nil {
+		log.Printf("解析翻译内容失败,等待3秒后重试:%v\n", e)
+		time.Sleep(3 * time.Second)
+		TransByServer(src, tc)
 	}
-	fmt.Printf("%+v\n", d)
-	return d.Data, nil
+	fmt.Printf("请求服务返回的结构体是%+v\n", r)
+	return r.Dst
 }
 
-const PREFIX = "https://api.deeplx.org"
-const SUFFIX = "translate"
+const HOST = "http://trans.zhangyiming748.eu.org/api/v1/translate"
 
-type DeepLXTranslationResult struct {
-	Code         int      `json:"code"`
-	ID           int64    `json:"id"`
-	Message      string   `json:"message,omitempty"`
-	Data         string   `json:"data"`         // The primary translated text
-	Alternatives []string `json:"alternatives"` // Other possible translations
-	SourceLang   string   `json:"source_lang"`
-	TargetLang   string   `json:"target_lang"`
-	Method       string   `json:"method"`
+type Req struct {
+	Dst string `json:"dst"`
 }
