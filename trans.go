@@ -97,9 +97,7 @@ func TransByServer(src string, tc TranslateConfig) (dst string) {
 	}
 	params := map[string]string{
 		"src": src,
-	}
-	if tc.Proxy != "" {
-		params["proxy"] = tc.Proxy
+		"keyword": tc.Keyword,
 	}
 	b, err := util.HttpPostJson(headers, params, HOST)
 	if err != nil {

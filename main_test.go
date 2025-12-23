@@ -9,8 +9,9 @@ func init() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 }
 func TestTransOne(t *testing.T) {
-	tc := TranslateConfig{}
-	tc.SetKey("")
-	tc.SourceSrtFile = "en_processed.srt"
+	tc := TranslateConfig{
+		Keyword:           "",
+		SourceSrtFile: "en.srt",
+	}
 	TranslateSrt(tc)
 }
