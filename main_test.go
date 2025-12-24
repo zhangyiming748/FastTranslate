@@ -8,10 +8,9 @@ import (
 func init() {
 	log.SetFlags(log.Ltime | log.Lshortfile)
 }
-func TestTransOne(t *testing.T) {
-	tc := TranslateConfig{
-		Keyword:           "",
-		SourceSrtFile: "en.srt",
-	}
-	TranslateSrt(tc)
+
+// go test -v -run TestTrans
+func TestTrans(t *testing.T) {
+	// TransByServer("So, thanks for watching")
+	TranslateSrt("/Users/zen/Github/FastTranslate/source/Abella Danger.srt", "http://192.168.5.2:6380")
 }
