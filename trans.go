@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"os/exec"
 	"github.com/zhangyiming748/FastTranslate/util"
 )
 
@@ -19,15 +19,9 @@ var (
 
 /*
 sourceSrtFile: 源文件
-host: 翻译服务地址
+proxy: 代理地址
 */
-func TranslateSrt(sourceSrtFile, server string) {
-	if server == "" {
-		host = DEFAULTHOST
-	} else {
-		host = strings.Join([]string{server, "api/v1/translate"}, "/")
-	}
-	log.Printf("主机名%vs", host)
+func TranslateSrt(sourceSrtFile, proxy string) {
 	r := seed.Intn(2000)
 	tmpname := strings.Join([]string{strings.Replace(sourceSrtFile, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
 	before := util.ReadInSlice(sourceSrtFile)
@@ -62,7 +56,7 @@ func TranslateSrt(sourceSrtFile, server string) {
 		src = strings.Replace(src, "\n", "", 1)
 		src = strings.Replace(src, "\r\n", "", 1)
 		var dst string
-		dst = Trans(src)
+		dst = Trans(src,proxy)
 		dst = strings.Replace(dst, "\n", "", -1)
 		randomNumber := util.GetSeed().Intn(401) + 100
 		time.Sleep(time.Duration(randomNumber) * time.Millisecond) // 暂停 100 毫秒
@@ -83,8 +77,8 @@ func TranslateSrt(sourceSrtFile, server string) {
 		log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
 	}
 }
-func Trans(src string) (dst string) {
-	dst = TransByServer(src)
+func Trans(src,proxy string) (dst string) {
+	dst = TransWithTranslateShell(src,proxy)
 	dst = strings.ReplaceAll(dst, "\n", "") // 删除所有换行符
 	dst = strings.ReplaceAll(dst, "\r", "") // 删除所有回车符
 	if strings.Contains(dst, "error") {
@@ -101,7 +95,7 @@ curl --location --request POST 'http://trans.zhangyiming748.eu.org/api/v1/transl
 "proxy":"http://127.0.0.1:8889"
 }'
 */
-func TransByServer(src string) (dst string) {
+func TransWithTranslateShell(src ,proxy string) (dst string) {
 	params := map[string]string{
 		"src": src,
 	}
@@ -109,14 +103,44 @@ func TransByServer(src string) (dst string) {
 	if err != nil {
 		log.Fatalf("获取翻译服务响应失败,等待3秒后重试:%v\n", err)
 		time.Sleep(3 * time.Second)
-		return TransByServer(src)
+		return TransByGoogle(src,proxy)
 	}
 	dst = string(b)
 	return dst
 }
-
-const (
-	DEFAULTHOST = "http://127.0.0.1:6380/api/v1/translate"
-	//DEFAULTHOST = "http://trans.zhangyiming748.eu.org/api/v1/translate"
-
-)
+func TransByGoogle(src, proxy string) (dst string) {
+	cmd := exec.Command("trans", "-brief", "-engine", "google", "-proxy", proxy, ":zh-CN", src)
+	output, err := cmd.CombinedOutput()	
+	result := string(output)
+	result = strings.Replace(result, "\\r\\n", "", 1)
+	result = strings.Replace(result, "\n", "", 1)
+	result = strings.Replace(result, "\r\n", "", 1)
+	if result == "" {
+		result=TransByBing(src)
+	}
+	if err != nil || strings.Contains(string(output), "u001b") || strings.Contains(string(output), "Didyoumean") || strings.Contains(string(output), "Connectiontimedout") {
+		log.Printf("google查询命令执行出错\t命令原文:%v\t错误原文:%v\n", cmd.String(), err.Error())
+		time.Sleep(3 * time.Second)
+		result=TransByBing(src)
+	}
+	return result
+}
+func TransByBing(src string) (dst string) {
+	cmd := exec.Command("trans", "-brief", "-engine", "bing", ":zh-CN", src)
+	log.Printf("查询命令:%s\n", cmd.String())
+	output, err := cmd.CombinedOutput()
+	result := string(output)
+	result = strings.Replace(result, "\\r\\n", "", 1)
+	result = strings.Replace(result, "\n", "", 1)
+	result = strings.Replace(result, "\r\n", "", 1)
+	if result == "" {
+		return src
+	}
+	if err != nil || strings.Contains(string(output), "u001b") || strings.Contains(string(output), "Didyoumean") || strings.Contains(string(output), "Connectiontimedout") {
+		log.Printf("bing查询命令执行出错\t命令原文:%v\t错误原文:%v\n", cmd.String(), err.Error())
+		time.Sleep(3 * time.Second)
+		TransByBing(src)
+	}
+	log.Printf("%s执行查询命令后的译文:%s\n", src, result)
+	return result
+}
