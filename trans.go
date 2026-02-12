@@ -96,17 +96,7 @@ curl --location --request POST 'http://trans.zhangyiming748.eu.org/api/v1/transl
 }'
 */
 func TransWithTranslateShell(src ,proxy string) (dst string) {
-	params := map[string]string{
-		"src": src,
-	}
-	b, err := util.HttpGet(nil, params, host)
-	if err != nil {
-		log.Fatalf("获取翻译服务响应失败,等待3秒后重试:%v\n", err)
-		time.Sleep(3 * time.Second)
-		return TransByGoogle(src,proxy)
-	}
-	dst = string(b)
-	return dst
+	return TransByGoogle(src,proxy)
 }
 func TransByGoogle(src, proxy string) (dst string) {
 	cmd := exec.Command("trans", "-brief", "-engine", "google", "-proxy", proxy, ":zh-CN", src)
