@@ -52,7 +52,9 @@ func TranslateSrt(sourceSrtFile, proxy string) {
 		after.Sync()
 		log.Printf("第 %d 组字幕写入完成\n", i/4+1)
 	}
-	after.Close()
+	if err := after.Close(); err != nil {
+		log.Fatalf("关闭临时字幕文件失败 [路径:%s]:%v\n", tmpname, err)
+	}
 	log.Printf("所有字幕处理完成，关闭文件并开始重命名\n")
 	origin := strings.Join([]string{strings.Replace(sourceSrtFile, ".srt", "", 1), "_origin", ".srt"}, "")
 	err1 := os.Rename(sourceSrtFile, origin)
@@ -80,6 +82,9 @@ curl --location --request POST 'http://trans.zhangyiming748.eu.org/api/v1/transl
 }'
 */
 func TransWithTranslateShell(src, proxy string) (dst string) {
+	if src ==""{
+		return ""
+	}
 	var (
 		cmd  *exec.Cmd
 		args []string
@@ -110,13 +115,11 @@ func TransWithTranslateShell(src, proxy string) (dst string) {
 			errMsg = err.Error()
 		}
 		log.Printf("翻译命令执行失败\t命令：%v\t输出：%v\t错误：%v\n", cmd.String(), string(output), errMsg)
-		return TransWithTranslateShell(src, proxy)
+		return "翻译错误 需要手动翻译当前内容"
 	}
 	
 	if strings.Contains(string(output), "u001b") || strings.Contains(string(output), "Didyoumean") || strings.Contains(string(output), "Connectiontimedout") {
-		log.Printf("翻译结果异常，重试中...\t输出：%v\n", string(output))
-		time.Sleep(3 * time.Second)
-		return TransWithTranslateShell(src, proxy)
+		return "翻译错误 需要手动翻译当前内容"
 	}
 	
 	return result
