@@ -1,7 +1,6 @@
 package FastTranslate
 
 import (
-	"fmt"
 	"github.com/zhangyiming748/FastTranslate/util"
 	"log"
 	"math/rand"
@@ -23,52 +22,38 @@ proxy: 代理地址
 func TranslateSrt(sourceSrtFile, proxy string) {
 	r := seed.Intn(2000)
 	tmpname := strings.Join([]string{strings.Replace(sourceSrtFile, ".srt", "", 1), strconv.Itoa(r), ".srt"}, "")
+	log.Printf("开始处理字幕文件：%s, 临时文件名：%s\n", sourceSrtFile, tmpname)
 	before := util.ReadInSlice(sourceSrtFile)
+	log.Printf("读取源文件完成，共 %d 行\n", len(before))
 	//fmt.Println(before)
-	after, _ := os.OpenFile(tmpname, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0777)
-	defer func() {
-		if err := recover(); err != nil {
-			v := fmt.Sprintf("捕获到错误:%v\n", err)
-			if strings.Contains(v, "index out of range") {
-				fmt.Println("捕获到 index out of range 类型错误,忽略并继续执行重命名操作")
-				{
-					origin := strings.Join([]string{strings.Replace(sourceSrtFile, ".srt", "", 1), "_origin", ".srt"}, "")
-					err1 := os.Rename(sourceSrtFile, origin)
-					err2 := os.Rename(tmpname, sourceSrtFile)
-					if err1 != nil || err2 != nil {
-						log.Fatalf("字幕文件重命名出现错误:%v%v\n", err1, err2)
-					}
-				}
-				return
-			} else {
-				log.Fatalf("捕获到其他错误:%v\n", v)
-			}
-		}
-	}()
+	after, err := os.OpenFile(tmpname, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0777)
+	if err != nil {
+		log.Fatalf("无法创建临时字幕文件 [路径:%s]:%v\n", tmpname, err)
+	}
+	log.Printf("临时文件创建成功：%s\n", tmpname)
 	for i := 0; i < len(before); i += 4 {
 		if i+3 > len(before) {
 			continue
 		}
+		log.Printf("正在处理第 %d 组字幕 (总共 %d 行)\n", i/4+1, len(before))
 		after.WriteString(before[i])
 		after.WriteString(before[i+1])
 		src := before[i+2]
-		src = strings.Replace(src, "\n", "", 1)
-		src = strings.Replace(src, "\r\n", "", 1)
+		src = strings.TrimSpace(src)
 		var dst string
 		dst = Trans(src, proxy)
-		dst = strings.Replace(dst, "\n", "", -1)
+		dst = strings.TrimSpace(dst)
 		randomNumber := util.GetSeed().Intn(401) + 100
 		time.Sleep(time.Duration(randomNumber) * time.Millisecond) // 暂停 100 毫秒
-		fmt.Printf("trans.go的第61行输出src = %s\n", src)
-		fmt.Printf("trans.go的第62行输出dst = %s\n", dst)
 		after.WriteString(src)
 		after.WriteString("\n")
 		after.WriteString(dst)
 		after.WriteString(before[i+3])
-		after.WriteString(before[i+3])
 		after.Sync()
+		log.Printf("第 %d 组字幕写入完成\n", i/4+1)
 	}
 	after.Close()
+	log.Printf("所有字幕处理完成，关闭文件并开始重命名\n")
 	origin := strings.Join([]string{strings.Replace(sourceSrtFile, ".srt", "", 1), "_origin", ".srt"}, "")
 	err1 := os.Rename(sourceSrtFile, origin)
 	err2 := os.Rename(tmpname, sourceSrtFile)
@@ -117,16 +102,22 @@ func TransWithTranslateShell(src, proxy string) (dst string) {
 	result = strings.Replace(result, "\\r\\n", "", 1)
 	result = strings.Replace(result, "\n", "", 1)
 	result = strings.Replace(result, "\r\n", "", 1)
-	if result == "" {
+	
+	if result == "" || err != nil {
 		time.Sleep(3 * time.Second)
-		log.Printf("google查询命令执行出错\t命令原文:%v\t错误原文:%v\n", cmd.String(), err.Error())
-		result = TransWithTranslateShell(src, proxy)
+		errMsg := "未知错误"
+		if err != nil {
+			errMsg = err.Error()
+		}
+		log.Printf("翻译命令执行失败\t命令：%v\t输出：%v\t错误：%v\n", cmd.String(), string(output), errMsg)
+		return TransWithTranslateShell(src, proxy)
 	}
-	if err != nil || strings.Contains(string(output), "u001b") || strings.Contains(string(output), "Didyoumean") || strings.Contains(string(output), "Connectiontimedout") {
-		log.Printf("google查询命令执行出错\t命令原文:%v\t错误原文:%v\n", cmd.String(), err.Error())
+	
+	if strings.Contains(string(output), "u001b") || strings.Contains(string(output), "Didyoumean") || strings.Contains(string(output), "Connectiontimedout") {
+		log.Printf("翻译结果异常，重试中...\t输出：%v\n", string(output))
 		time.Sleep(3 * time.Second)
-		result = TransWithTranslateShell(src, proxy)
-		result = TransWithTranslateShell(src, proxy)
+		return TransWithTranslateShell(src, proxy)
 	}
+	
 	return result
 }
