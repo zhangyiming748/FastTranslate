@@ -12,11 +12,7 @@ func init() {
 // go test -v -run TestTrans
 func TestTrans(t *testing.T) {
 	// TransByServer("So, thanks for watching")
-	TranslateSrt("/Users/zen/Github/FastTranslate/source/Abella Danger.srt", "http://192.168.5.2:6380")
+	TranslateSrt("/Users/zen/gitea/yt-whisper-bilingual/精修英文字幕/Busty Cougar Billie Jean Austin Naked Yoga_origin.srt", "")
 }
 
-// go test -v -timeout 2m -run TestTransWordsWithAI
-func TestTransWordsWithAI(t *testing.T) {
-	dst := TransWordWithLLM("You have the best cock to suck.")
-	t.Logf("翻译后:%v\n", dst)
-}
+
